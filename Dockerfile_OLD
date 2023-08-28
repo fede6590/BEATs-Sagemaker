@@ -1,0 +1,30 @@
+FROM nvidia/cuda:11.0.3-cudnn8-runtime-ubuntu20.04
+
+ARG PACKAGES="ffmpeg build-essential"
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends -qq $PACKAGES && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN apt-get update && apt-get install -y python3.8 python3-pip
+
+# Create a non-root user and set up the virtual environment
+RUN useradd -ms /bin/bash trainer
+USER trainer
+ENV PATH="/home/trainer/.local/bin:${PATH}"
+
+ADD requirements.txt .
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install -r requirements.txt
+
+COPY . ./
+
+# Update the pythonpath
+ENV PYTHONPATH "${PYTHONPATH}:/app"
+CMD ["bash"]
