@@ -10,7 +10,7 @@ from torchmetrics import Accuracy
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.rank_zero import rank_zero_info
 
-from BEATs.BEATs import BEATs, BEATsConfig
+from code.BEATs import BEATs, BEATsConfig
 
 class ProtoBEATsModel(pl.LightningModule):
     def __init__(
