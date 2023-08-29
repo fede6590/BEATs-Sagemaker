@@ -23,11 +23,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def model_fn(model_dir):
     """Load saved model from file"""
     logger.info("Loading model...")
-    model_name = f"/opt/ml/model/{env['MODEL_NAME']}"
+    model_name = os.path.join(model_dir, env['MODEL_NAME'])
     checkpoint = torch.load(model_name)
     cfg = BEATsConfig(checkpoint['cfg'])
     model = BEATs(cfg)
-    logger.info(f"Model loaded to {device}")
     if torch.cuda.device_count() > 1:
         logger.info("GPU count: {}".format(torch.cuda.device_count()))
         model = nn.DataParallel(model)
