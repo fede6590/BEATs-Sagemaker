@@ -22,18 +22,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def model_fn(model_dir):
     """Load saved model from file"""
-    logger.info("Loading model...")
-    model_name = os.path.join(model_dir, env['MODEL_NAME'])
-    checkpoint = torch.load(model_name)
-    cfg = BEATsConfig(checkpoint['cfg'])
-    model = BEATs(cfg)
-    if torch.cuda.device_count() > 1:
-        logger.info("GPU count: {}".format(torch.cuda.device_count()))
-        model = nn.DataParallel(model)
-    model.load_state_dict(checkpoint['model'])
-    model.eval()
-    logger.info(f"Model loaded to {device}")
-    return model.to(device)
+    try:
+        logger.info("Loading model...")
+        model_name = os.path.join(model_dir, env['MODEL_NAME'])
+        checkpoint = torch.load(model_name)
+        cfg = BEATsConfig(checkpoint['cfg'])
+        model = BEATs(cfg)
+        if torch.cuda.device_count() > 1:
+            logger.info("GPU count: {}".format(torch.cuda.device_count()))
+            model = nn.DataParallel(model)
+        model.load_state_dict(checkpoint['model'])
+        model.eval()
+        logger.info(f"Model loaded to {device}")
+        return model.to(device)
+    except Exception as e:
+        logger.error("Error loading model: {}".format(e))
+        raise
 
 
 def input_fn(request_body):
