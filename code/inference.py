@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-env = os.environ
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def model_fn(model_dir):
     """Load saved model from file"""
     try:
+        env = os.environ
         logger.info("Loading model...")
         model_name = os.path.join(model_dir, env['MODEL_NAME'])
         checkpoint = torch.load(model_name)
