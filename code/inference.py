@@ -24,8 +24,7 @@ def model_fn(model_dir):
     try:
         model_name = os.path.join(model_dir, os.environ['MODEL_NAME'])
         if not os.path.exists(model_name):
-            raise FileNotFoundError(f"Model ({model_name}) not in {model_dir}")
-        logger.info(f'Model ({model_name}) found in {model_dir}')
+            raise FileNotFoundError(f"Model found ({model_name})")
         checkpoint = torch.load(model_name)
         cfg = BEATsConfig(checkpoint['cfg'])
         model = BEATs(cfg)
@@ -45,7 +44,7 @@ def model_fn(model_dir):
 def input_fn(request_body):
     try:
         if not request_body:
-            raise ValueError("No input provided.")
+            raise ValueError("No input provided")
         logger.info("Receiving input...")
         wav_tensor, sr = torchaudio.load(io.BytesIO(request_body))
         logger.info(f'Sample rate: {sr}')
@@ -76,7 +75,7 @@ def output_fn(predictions, content_type):
     try:
         res = predictions.detach().cpu().numpy().tolist()
         logger.info(f"Response: {res}")
-        return json.dumps(res)
+        return res
     except Exception as e:
         logger.error("Error formatting output: {}".format(e))
         raise
