@@ -1,4 +1,4 @@
-torch
-torchaudio
-numpy
-boto3
+torch==1.12.1
+torchaudio==0.12.1
+numpy==1.22.2
+boto3==1.23.8

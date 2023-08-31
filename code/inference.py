@@ -21,10 +21,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def model_fn(model_dir):
     """Load saved model from file"""
+    logger.info(f'mode_dir: {model_dir}')
     try:
         env = os.environ
-        logger.info("Loading model...")
+        for i in env:
+            if 'MODEL' in i:
+                logger.info(f'env: {i}')
+        logger.info(f"Loading model...{env['MODEL_NAME']}")
         model_name = os.path.join(model_dir, env['MODEL_NAME'])
+        logger.info(f'mode_name: {model_name}')
         checkpoint = torch.load(model_name)
         cfg = BEATsConfig(checkpoint['cfg'])
         model = BEATs(cfg)
@@ -43,6 +48,7 @@ def model_fn(model_dir):
 def input_fn(request_body):
     logger.info("Receiving input...")
     wf, sr = torchaudio.load(request_body)
+    logger.info(sr)
     if sr != 16000:
         wf = torchaudio.transforms.Resample(sr, 16000)(wf)
         logger.info("Resampled to 16kHz")
