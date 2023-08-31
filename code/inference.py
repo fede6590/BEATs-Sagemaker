@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import os
+import io
 
 # External Dependencies:
 import torch
@@ -46,13 +47,13 @@ def input_fn(request_body):
         if not request_body:
             raise ValueError("No input provided.")
         logger.info("Receiving input...")
-        wf, sr = torchaudio.load(request_body)
+        wav_tensor, sr = torchaudio.load(io.BytesIO(request_body))
         logger.info(f'Sample rate: {sr}')
         if sr != 16000:
-            wf = torchaudio.transforms.Resample(sr, 16000)(wf)
+            wav_tensor = torchaudio.transforms.Resample(sr, 16000)(wav_tensor)
             logger.info("Resampled to 16kHz")
         logger.info("Input ready")
-        return wf.to(device)
+        return wav_tensor.to(device)
     except Exception as e:
         logger.error("Error processing input: {}".format(e))
         raise
