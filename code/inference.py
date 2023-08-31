@@ -20,21 +20,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def model_fn(model_dir):
-    """Load saved model from file"""
-    logger.info(f'mode_dir: {model_dir}')
     try:
-        env = os.environ
-        for i in env:
-            if 'MODEL' in i:
-                logger.info(f'env: {i}')
-        logger.info(f"Loading model...{env['MODEL_NAME']}")
-        model_name = os.path.join(model_dir, env['MODEL_NAME'])
-        logger.info(f'mode_name: {model_name}')
+        model_name = os.path.join(model_dir, os.environ['MODEL_NAME'])
+        if not os.path.exists(model_name):
+            raise FileNotFoundError(f"Model ({model_name}) not in {model_dir}")
+        logger.info(f'Model ({model_name}) found in {model_dir}')
         checkpoint = torch.load(model_name)
         cfg = BEATsConfig(checkpoint['cfg'])
         model = BEATs(cfg)
         if torch.cuda.device_count() > 1:
-            logger.info("GPU count: {}".format(torch.cuda.device_count()))
+            gpus = torch.cuda.device_count()
+            logger.info("Parallelization with {} GPUs".format(gpus))
             model = nn.DataParallel(model)
         model.load_state_dict(checkpoint['model'])
         model.eval()
@@ -46,27 +42,40 @@ def model_fn(model_dir):
 
 
 def input_fn(request_body):
-    logger.info("Receiving input...")
-    wf, sr = torchaudio.load(request_body)
-    logger.info(sr)
-    if sr != 16000:
-        wf = torchaudio.transforms.Resample(sr, 16000)(wf)
-        logger.info("Resampled to 16kHz")
-    logger.info("Input ready")
-    return wf.to(device)
+    try:
+        if not request_body:
+            raise ValueError("No input provided.")
+        logger.info("Receiving input...")
+        wf, sr = torchaudio.load(request_body)
+        logger.info(f'Sample rate: {sr}')
+        if sr != 16000:
+            wf = torchaudio.transforms.Resample(sr, 16000)(wf)
+            logger.info("Resampled to 16kHz")
+        logger.info("Input ready")
+        return wf.to(device)
+    except Exception as e:
+        logger.error("Error processing input: {}".format(e))
+        raise
 
 
 def predict_fn(input_object, model):
     logger.info("Starting inference...")
-    with torch.no_grad():
-        prediction = model.extract_features(input_object, padding_mask=None)[0]
-    logger.info("Inference done")
-    return prediction
+    try:
+        with torch.no_grad():
+            prediction = model.extract_features(input_object, padding_mask=None)[0]
+        logger.info("Inference done")
+        return prediction
+    except Exception as e:
+        logger.error("Inference error: {}".format(e))
+        raise
 
 
 def output_fn(predictions, content_type):
-    """Post-process and serialize model output to API response"""
     logger.info("Responding...")
-    res = predictions.detach().cpu().numpy().tolist()
-    logger.info(f"Response: {res}")
-    return json.dumps(res)
+    try:
+        res = predictions.detach().cpu().numpy().tolist()
+        logger.info(f"Response: {res}")
+        return json.dumps(res)
+    except Exception as e:
+        logger.error("Error formatting output: {}".format(e))
+        raise
