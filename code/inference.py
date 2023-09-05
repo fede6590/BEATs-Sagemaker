@@ -4,6 +4,7 @@ import sys
 import os
 import io
 import json
+import pickle
 
 # External Dependencies:
 import torch
@@ -57,11 +58,13 @@ def input_fn(request_body):
         if not request_body:
             raise ValueError("No input provided")
         logger.info("Receiving input...")
-        wf, sr = torchaudio.load(io.BytesIO(request_body))
+        audio_data = pickle.loads(request_body)
+        wf, sr = torchaudio.load(io.BytesIO(audio_data))
         logger.info(f'Sample rate: {sr}')
         if sr != 16000:
             wf = torchaudio.transforms.Resample(sr, 16000)(wf)
             logger.info("Resampled to 16kHz")
+        wf = torch.tensor(wf)
         logger.info("Input ready")
         return wf.to(device)
     except Exception as e:
